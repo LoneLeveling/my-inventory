@@ -1,27 +1,41 @@
-name: Continuous Integration
-on: push
-env:
+name: Continuous Integration #Just a display name of the workflow has not impact on workflow behaviour so you can name this this value anything.
+on: push #Imp note: Here "on: push" = trigger 
+env: #these env variables are used at runtime.
   DB_NAME: test
   DB_USER: root
   DB_PASSWORD: qawsed@123
-jobs:
-  run_code_checks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up MySQL
+jobs: #'jobs' <-- these are the units that runs on the runner and in each job we have the steps which needs to be executed.
+  run_code_checks: #run_code_checks=job name, changing job name does not impact the workflow.
+    runs-on: ubuntu-latest #runs-on: ubuntu-latest means telling github actions which vm image to use,for running the job for every fresh run. NOTE: The run fields in a step contains shell commands, the yaml is only the wrapper.
+    steps: #in 'step' we defined individual actions, In every step 'run' runs the shell commands and 'uses' calls the existing actions. 
+      - name: Set up MySQL 
         run: |
           sudo /etc/init.d/mysql start
           sudo mysql -e "ALTER USER '${{ env.DB_USER }}'@'localhost' IDENTIFIED BY '${{ env.DB_PASSWORD }}';" -uroot -proot
           sudo mysql -e "CREATE DATABASE ${{ env.DB_NAME }};" -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }}
-      - name: Checkout Repo Code
-        uses: actions/checkout@v2
+      - name: Checkout Repo Code #'name' field's value is also just for display you can have any readable texts for name.
+        uses: actions/checkout@v2 #uses: this is a configuration vaues, which specifies which existing github action to use ?.
       - name: Set Up Go
-        uses: actions/setup-go@v2
-        with:
+        uses: actions/setup-go@v2 #here 'actions/setup-go@v2' basically tells github actions to fetch and use the setup go actions version v2.
+        with: #'with' is used to pass configuration params, like go-version below, so that actions runs fine with no issues.
           go-version: 1.26
-      - name: Run linting
-        run: |
-          go fmt ./...
+      - name: Run linting #'Run linting' is again just a lable. Linting - is checking code for style issues & possible bugs, it runs before the build step in a CI pipeline so the issues are caught early before build creation process in initiated.
+        run: |  #This '|' starts a multiline block of commands
+          go fmt ./... 
           go vet ./...
       - name: Run tests
         run: go test
+
+#NOTE: Workflow Trigger Flow:
+#1st: You push code to github
+#2nd: Github notifies github actions about the push event
+#3rd: Github actions checks for the '.github/workflows' folder in the project pushed.
+#4th: If a workflow files (.yaml) is found under the .github/workflows folder then github actions parses the .yaml file and checks if the trigger (meaning: 'on: push' as above) defined in the file matches the current event, 
+#5th: If the trigger(Like above-> on: push) matches github actions starts the runner and executes the job.
+
+
+#Above we have key-values pairs, keys are configuration keys which are defined in github action syntax and values are the settings values you supply under those keys and values serves 2 different purposes, 1. They can be descriptive like the name field or 2nd. They can be configuration values like 'ubuntu-latest'.
+#'name' (key) and "Set up Mysql"=label & this field is just a human readable label so changing its case doesn't change behaviour of the workflow, 
+#And configuration values ex: 'runs-on' must be as defined in github actions docs.
+#So whenever you see a key ask yourself is github actions interpreting this values or just dispalying it? if interpreting its a configuration and its value must be same as in github actions docs, and 
+#if its just for display then its just a descriptive label, changing its text or case doesn't affect how the workflow runs.
